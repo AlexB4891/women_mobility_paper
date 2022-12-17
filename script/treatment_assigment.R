@@ -9,6 +9,7 @@
 library(tidyverse)
 library(pins)
 library(gt)
+library(patchwork)
 
 
 # PINS --------------------------------------------------------------------
@@ -117,5 +118,51 @@ pin_write(board = carpeta,
 
 # Pequeño EDA -------------------------------------------------------------
 
+ids_index <- pin_read(board = carpeta,
+                      name = "bdd_index_ids") 
+
+
+plots_anuales <- ids_index %>% 
+  select(grupo,anio,ids_index_recoded) %>% 
+  ungroup() %>% 
+  group_by(grupo) %>% 
+  
+  nest(data_plot = c(anio,ids_index_recoded)) %>% 
+  ungroup() %>% 
+  mutate(data_plot = map2(data_plot,
+                          c("t-1: Nuevos == 0,t: Nuevos > 0 ",
+                            "t-1: Nuevos == 0,t: Nuevos == 0",
+                            "t-1: Nuevos > 0, t: Nuevos > 0",
+                            "t-1: Nuevos > 0, t: Nuevos == 0",
+                            "Raros"),
+                          ~.x %>% mutate(label = .y))) 
+
+
+plots_anuales <- plots_anuales %>% 
+  ungroup() %>% 
+  mutate(grafico = map(data_plot,
+                          ~{
+                            
+                            label_tag <- unique(.x$label)
+                            
+                            .x %>% 
+                              ggplot()+
+                              geom_histogram(aes(x = ids_index_recoded))+
+                              facet_wrap(anio~.,nrow = 5) +
+                              labs(subtitle = label_tag)
+                            
+  }))
+
+paneles <- plots_anuales %>% 
+  mutate(grafico = map2(grafico,
+                        grupo,
+                        ~.x + 
+                          labs(title = str_c("Analisis para el ",.y)))) %>% 
+  pull(grafico) %>% 
+  reduce(`+`)
+
+# An[alisis]
+
+paneles + plot_layout(ncol = 5)
 
 
