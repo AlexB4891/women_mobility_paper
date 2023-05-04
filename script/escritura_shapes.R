@@ -12,3 +12,6 @@ centroides <- read_rds("C:/Users/Alex/Documents/vital_strategies/6 Entrega final
 pin_write(carpeta,x = mapa_parroquia,"shape_parroquia")
 
 pin_write(carpeta,x = centroides,"shape_parroquia_centroides")
+
+# Mensjae
+
